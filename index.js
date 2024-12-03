@@ -1,6 +1,16 @@
 const express = require('express');
 const app = express();
 const PORT = 3000;
+const { Pool } = require('pg');
+
+// PG connection
+const pool = new Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'DBQAP3',
+    password: 'password',
+    port: 5432,
+});
 
 app.use(express.json());
 
