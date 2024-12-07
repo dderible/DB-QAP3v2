@@ -3,6 +3,9 @@ const app = express();
 const PORT = 3000;
 const { Pool } = require('pg');
 
+
+app.use(express.json());
+
 // PG connection
 const pool = new Pool({
     user: 'postgres',
@@ -12,7 +15,19 @@ const pool = new Pool({
     port: 5432,
 });
 
-app.use(express.json());
+async function createTables() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS tasks (
+                id SERIAL PRIMARY KEY,
+                description TEXT NOT NULL,
+                status TEXT NOT NULL
+            )`);
+        console.log('Table Successfully Created!');
+    } catch (error) {
+        console.error('ERROR: Table could not be created.', error);
+    }
+}
 
 let tasks = [
     { id: 1, description: 'Buy groceries', status: 'incomplete' },
@@ -20,19 +35,35 @@ let tasks = [
 ];
 
 // GET /tasks - Get all tasks
-app.get('/tasks', (req, res) => {
-    res.json(tasks);
+app.get('/tasks', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM tasks');
+        response.json(result.rows);
+    }
+    catch (error) {
+        console.error(error);
+        response.status(500).send('ERROR: Server not responding.');
+    }
 });
 
 // POST /tasks - Add a new task
-app.post('/tasks', (request, response) => {
-    const { id, description, status } = request.body;
-    if (!id || !description || !status) {
-        return response.status(400).json({ error: 'All fields (id, description, status) are required' });
+app.post('/tasks', async (request, response) => {
+    const { description, status } = request.body;
+    if (!description || !status) {
+        return response.status(400).json({ error: 'All fields (description & status) are required' });
     }
 
-    tasks.push({ id, description, status });
-    response.status(201).json({ message: 'Task added successfully' });
+    try {
+        const result = await pool.query (
+            `INSERT INTO tasks (description, status) VALUES ($1, $2) RETURNING *`,
+            [description, status]
+        );
+        response.status(201).json(result.rows[0]);
+    }
+    catch (error) {
+        console.error(error);
+        response.status(500).send('Server error');
+    }
 });
 
 // PUT /tasks/:id - Update a task's status
