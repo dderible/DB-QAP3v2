@@ -24,6 +24,7 @@ async function createTables() {
                 status TEXT NOT NULL
             )`);
         console.log('Table Successfully Created!');
+
     } catch (error) {
         console.error('ERROR: Table could not be created.', error);
     }
@@ -67,28 +68,37 @@ app.post('/tasks', async (request, response) => {
 });
 
 // PUT /tasks/:id - Update a task's status
-app.put('/tasks/:id', (request, response) => {
+app.put('/tasks/:id', async (request, response) => {
     const taskId = parseInt(request.params.id, 10);
     const { status } = request.body;
-    const task = tasks.find(t => t.id === taskId);
 
-    if (!task) {
-        return response.status(404).json({ error: 'Task not found' });
+    try{
+        const result = await pool.query('UPDATE tasks SET status = $1 WHERE id = $2 RETURNING *', [status, taskId]);
+        if (result.rowCount === 0) {
+            return response.status(404).send('Task not found');
+        }
+        response.json(result.rows[0]);
+
+    } catch (error) {
+        console.error(error);
+        response.status(500).send('ERROR: Server error');
     }
-    task.status = status;
-    response.json({ message: 'Task updated successfully' });
 });
 
 // DELETE /tasks/:id - Delete a task
-app.delete('/tasks/:id', (request, response) => {
+app.delete('/tasks/:id', async (request, response) => {
     const taskId = parseInt(request.params.id, 10);
-    const initialLength = tasks.length;
-    tasks = tasks.filter(t => t.id !== taskId);
-
-    if (tasks.length === initialLength) {
-        return response.status(404).json({ error: 'Task not found' });
+    try {
+        const result = await pool.query(
+            `DELETE FROM tasks WHERE id = $1 RETURNING *`,
+            [taskId]
+        );
+        response.json({ message: 'Task deleted successfully' });
     }
-    response.json({ message: 'Task deleted successfully' });
+    catch (error) {
+        console.error(error);
+        response.status(500).send('Server error');
+    }
 });
 
 app.listen(PORT, () => {
