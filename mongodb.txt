@@ -1,0 +1,47 @@
+//Adding to DB tables
+
+db.createCollection("books");
+
+db.books.insertMany([
+    {
+        title: "The Hobbit",
+        author: "J.R.R. Tolkien",
+        genre: "Fantasy",
+        year: 1937
+    },
+    {
+        title: "To Kill a Mockingbird",
+        author: "Harper Lee",
+        genre: "Fiction",
+        year: 1960
+    },
+    {
+        title: "1984",
+        author: "George Orwell",
+        genre: "Dystopian",
+        year: 1949
+    }
+]);
+
+// QUERIES:
+
+// Find all books
+db.books.find({}, { title: 1, _id: 0});
+
+
+// Find all works from author
+db.books.find({author: "J.R.R. Tolkien"});
+
+
+// Update 1984 to Sci-Fi
+db.books.updateOne(
+    {title: "1984"},
+    {$set: {genre: "Sci-Fi"}}
+);
+
+
+// Delete a particular book
+db.books.deleteOne({title: "The Hobbit"});
+
+//Not sure if these are good or not, just 
+//tried looking up info online and made educated guesses
